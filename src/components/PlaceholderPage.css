@@ -1,0 +1,65 @@
+.placeholder-page {
+  padding: 40px;
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.placeholder-content {
+  background: #ffffff;
+  padding: 48px 32px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e9ecef;
+}
+
+.placeholder-icon {
+  font-size: 4rem;
+  margin-bottom: 24px;
+}
+
+.placeholder-page h1 {
+  font-size: 2.2rem;
+  color: #333;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 32px;
+}
+
+.placeholder-info {
+  background-color: #f8f9fa;
+  padding: 24px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.placeholder-info p {
+  margin: 8px 0;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .placeholder-page {
+    padding: 24px 16px;
+  }
+  
+  .placeholder-content {
+    padding: 32px 24px;
+  }
+  
+  .placeholder-page h1 {
+    font-size: 1.8rem;
+  }
+  
+  .placeholder-icon {
+    font-size: 3rem;
+  }
+}
+

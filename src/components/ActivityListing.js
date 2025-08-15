@@ -1,16 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { campaignService } from '../services/campaignService';
+import { useSearchContext } from '../context/SearchContext';
 import './ActivityListing.css';
 
 const ActivityListing = () => {
+  const { searchParams, userInfo, updateSearchParams, setUserInfo } = useSearchContext();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [userInfo, setUserInfo] = useState(null);
-  const [searchParams, setSearchParams] = useState({
-    countryCode: '+1',
-    mobileNumber: '7815791608',
-  });
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -25,11 +22,11 @@ const ActivityListing = () => {
   // Track if initial load is done
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
-  const fetchCampaigns = useCallback(async (countryCode, mobileNumber) => {
+  const fetchCampaigns = useCallback(async (countryCode, mobileNumber, email) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await campaignService.getUserCampaigns(countryCode, mobileNumber);
+      const data = await campaignService.getUserCampaigns(countryCode, mobileNumber, email);
       
       if (data.users && data.users.length > 0) {
         const user = data.users[0];
@@ -37,6 +34,10 @@ const ActivityListing = () => {
         setCampaigns(user.campaigns || []);
         setCurrentPage(1); // Reset to first page on new search
       } else {
+        // Create specific error message based on search type
+        const searchType = email ? 'email' : 'phone number';
+        const searchValue = email || mobileNumber;
+        setError(`No user found with the specified ${searchType}: ${searchValue}`);
         setCampaigns([]);
         setUserInfo(null);
         setTotalPages(0);
@@ -101,13 +102,27 @@ const ActivityListing = () => {
     }
   }, [campaigns, sortField, sortDirection, pageSize]);
 
-  // Only perform initial load on component mount
+  // Only perform initial load on component mount if we have a mobile number
   useEffect(() => {
     if (!initialLoadDone) {
-      fetchCampaigns(searchParams.countryCode, searchParams.mobileNumber);
+      if (searchParams.mobileNumber.trim()) {
+        fetchCampaigns(searchParams.countryCode, searchParams.mobileNumber);
+      } else {
+        setLoading(false);
+        setCampaigns([]);
+        setUserInfo(null);
+        setTotalPages(0);
+      }
       setInitialLoadDone(true);
     }
   }, [fetchCampaigns, searchParams.countryCode, searchParams.mobileNumber, initialLoadDone]);
+
+  // Auto-fetch data when searchParams change (e.g., when navigating from another page)
+  useEffect(() => {
+    if (initialLoadDone && (searchParams.mobileNumber.trim() || searchParams.email.trim())) {
+      fetchCampaigns(searchParams.countryCode, searchParams.mobileNumber, searchParams.email);
+    }
+  }, [searchParams.countryCode, searchParams.mobileNumber, searchParams.email, initialLoadDone, fetchCampaigns]);
 
   // Update total pages when pageSize changes
   useEffect(() => {
@@ -118,24 +133,33 @@ const ActivityListing = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setSearchParams(prev => ({
-      ...prev,
-      [name]: value,
-    }));
+    updateSearchParams({ [name]: value });
   };
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
-    // Prevent multiple simultaneous requests
     if (loading) return;
     
-    // Only search if we have valid inputs
-    if (!searchParams.countryCode.trim() || !searchParams.mobileNumber.trim()) {
-      setError('Please enter both country code and mobile number.');
+    const hasPhone = searchParams.mobileNumber.trim();
+    const hasEmail = searchParams.email.trim();
+    
+    if (!searchParams.countryCode.trim()) {
+      setError('Please select a country code.');
       return;
     }
     
-    fetchCampaigns(searchParams.countryCode.trim(), searchParams.mobileNumber.trim());
+    if (!hasPhone && !hasEmail) {
+      setError('Please enter either a mobile number or email address.');
+      return;
+    }
+    
+    if (hasPhone && hasEmail) {
+      setError('Please enter either a mobile number OR email address, not both.');
+      return;
+    }
+    
+    setError(null);
+    fetchCampaigns(searchParams.countryCode.trim(), searchParams.mobileNumber.trim(), searchParams.email.trim());
   };
 
   const handlePageSizeChange = (e) => {
@@ -237,40 +261,70 @@ const ActivityListing = () => {
       {/* Search Form */}
       <div className="search-section">
         <form onSubmit={handleSearch} className="search-form">
-          <div className="form-group">
-            <label htmlFor="countryCode">Country Code:</label>
-            <input
-              type="text"
-              id="countryCode"
-              name="countryCode"
-              value={searchParams.countryCode}
-              onChange={handleInputChange}
-              placeholder="+1"
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="mobileNumber">Mobile Number:</label>
-            <input
-              type="text"
-              id="mobileNumber"
-              name="mobileNumber"
-              value={searchParams.mobileNumber}
-              onChange={handleInputChange}
-              placeholder="7815791608"
-              required
-            />
+          <div className="search-inputs">
+            <div className="input-group">
+              <label htmlFor="countryCode">Country Code</label>
+              <select
+                id="countryCode"
+                name="countryCode"
+                value={searchParams.countryCode}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="+1">+1 (US/Canada)</option>
+                <option value="+44">+44 (UK)</option>
+                <option value="+91">+91 (India)</option>
+                <option value="+61">+61 (Australia)</option>
+                <option value="+86">+86 (China)</option>
+                <option value="+81">+81 (Japan)</option>
+                <option value="+49">+49 (Germany)</option>
+                <option value="+33">+33 (France)</option>
+                <option value="+39">+39 (Italy)</option>
+                <option value="+34">+34 (Spain)</option>
+              </select>
+            </div>
+            <div className="input-group">
+              <label htmlFor="mobileNumber">Mobile Number</label>
+              <input
+                type="tel"
+                id="mobileNumber"
+                name="mobileNumber"
+                value={searchParams.mobileNumber}
+                onChange={handleInputChange}
+                placeholder="Enter mobile number"
+                disabled={!!searchParams.email.trim()}
+              />
+            </div>
+            <div className="input-group">
+              <label htmlFor="email">Email Address</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={searchParams.email}
+                onChange={handleInputChange}
+                placeholder="Enter email address"
+                disabled={!!searchParams.mobileNumber.trim()}
+              />
+            </div>
           </div>
           <button type="submit" className="search-btn" disabled={loading}>
             {loading ? 'Searching...' : 'Search'}
           </button>
         </form>
-        <div className="search-instructions">
-          <small>💡 Type your search criteria and click the Search button to fetch campaigns</small>
-        </div>
-      </div>
+              </div>
 
-      {/* User Info */}
+        {/* Initial State Message */}
+        {!userInfo && !loading && !error && initialLoadDone && (
+          <div className="initial-state-message">
+            <div className="message-content">
+              <h3>📋 Activity Listing</h3>
+              <p>Enter a phone number above to search for user campaigns and activities.</p>
+            </div>
+          </div>
+        )}
+
+        {/* User Info */}
       {userInfo && (
         <div className="user-info">
           <h2>User Information</h2>

@@ -1,14 +1,14 @@
 const API_BASE_URL = 'https://h386cmk85a.us-east-1.awsapprunner.com/support_api';
 
-export const campaignService = {
+export const dealsService = {
   /**
-   * Fetch user campaigns from the API
+   * Fetch user deals from the API
    * @param {string} countryCode - Country code (e.g., "+1")
    * @param {string} mobileNumber - Mobile number
    * @param {string} email - User email (optional)
-   * @returns {Promise} - Promise resolving to API response
+   * @returns {Promise} - Promise resolving to deals data
    */
-  async getUserCampaigns(countryCode, mobileNumber, email = '') {
+  async getUserDeals(countryCode, mobileNumber, email = '') {
     try {
       const requestBody = {
         country_code: countryCode,
@@ -20,7 +20,7 @@ export const campaignService = {
         requestBody.email = email.trim();
       }
 
-      const response = await fetch(`${API_BASE_URL}/user-campaigns/`, {
+      const response = await fetch(`${API_BASE_URL}/user-deals/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -35,19 +35,19 @@ export const campaignService = {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Error fetching user campaigns:', error);
+      console.error('Error fetching user deals:', error);
       throw error;
     }
   },
 
   /**
-   * Fetch user usage history from the API
+   * Fetch deals added by user to FlocknGo platform
    * @param {string} countryCode - Country code (e.g., "+1")
    * @param {string} mobileNumber - Mobile number
    * @param {string} email - User email (optional)
-   * @returns {Promise} - Promise resolving to usage history data
+   * @returns {Promise} - Promise resolving to deals added by user
    */
-  async getUserUsageHistory(countryCode, mobileNumber, email = '') {
+  async getUserAddedDeals(countryCode, mobileNumber, email = '') {
     try {
       const requestBody = {
         country_code: countryCode,
@@ -59,7 +59,7 @@ export const campaignService = {
         requestBody.email = email.trim();
       }
 
-      const response = await fetch(`${API_BASE_URL}/user-usage-history/`, {
+      const response = await fetch(`${API_BASE_URL}/user-added-deals/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -74,8 +74,8 @@ export const campaignService = {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Error fetching user usage history:', error);
+      console.error('Error fetching user added deals:', error);
       throw error;
     }
   },
-}; 
+};
